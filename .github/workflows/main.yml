@@ -1,1 +1,37 @@
+name: CI
+on:
+  workflow_dispatch:
 
+  schedule:
+    - cron: '0 17 * * *'
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    env:
+      Email: ${{ secrets.EMAIL }}
+      Pass: ${{ secrets.PASS }}
+      
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ChromeDriver
+        run: |
+            CHROME_VERSION=$(google-chrome --version | grep -oP 'Google Chrome \K([\d\.]+)') \
+            && echo $CHROME_VERSION \
+            && DOWNLOAD_URL="https://storage.googleapis.com/chrome-for-testing-public/${CHROME_VERSION}/linux64/chromedriver-linux64.zip" \
+            && echo "$DOWNLOAD_URL" \
+            && curl --silent --show-error --location --fail --retry 3 --output /tmp/chromedriver-linux64.zip $DOWNLOAD_URL \
+            && cd /tmp \
+            && unzip chromedriver-linux64.zip \
+            && rm -rf chromedriver-linux64.zip \
+            && sudo mv chromedriver-linux64/chromedriver /usr/local/bin/chromedriver \
+            && sudo chmod +x /usr/local/bin/chromedriver \
+            && chromedriver --version
+            
+      - name: Install requirements
+        run: |
+          pip install selenium
+
+      - name: SignIn account
+        run: |
+          python ./main.py
